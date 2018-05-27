@@ -1,4 +1,4 @@
-package cn.dmrf.nuaa.gesturewithtf;
+package cn.dmrf.nuaa.gesturewithtf.Utils;
 
 import android.annotation.SuppressLint;
 import android.content.res.AssetManager;
@@ -33,11 +33,7 @@ public class TensorFlowUtil {
     private AssetManager assetManager;
     private String target = "H";
 
-    public TensorFlowUtil() {
-    }
-
-    @SuppressLint("LongLogTag")
-    public void load(AssetManager assetManager, String model) {
+    public TensorFlowUtil(AssetManager assetManager, String model) {
         try {
             this.assetManager = assetManager;
             inferenceInterface = new TensorFlowInferenceInterface(assetManager, model);
@@ -54,7 +50,23 @@ public class TensorFlowUtil {
     }
 
     @SuppressLint("LongLogTag")
-    public void re() {
+    public long Predict(float[] gesturedata) {
+
+        outputint[0] = -1;
+        inferenceInterface.feed(inputName, floatValues, batch, h, w, c);
+
+        inferenceInterface.run(outputNames, logStats);
+
+        Trace.beginSection("fetch");
+        inferenceInterface.fetch(outputNameint, outputint);
+
+        Log.i("TensorflowesturePredict", "result:" + outputint[0]);
+        return outputint[0];
+    }
+
+
+    @SuppressLint("LongLogTag")
+    public void PredictTest() {
         try {
             InputStream is = assetManager.open(target + "_I.txt");
             ArrayList<Float> id = readTextFromFile(is);
@@ -78,7 +90,7 @@ public class TensorFlowUtil {
             for (int i = 0; i < 8; i++) {
                 for (int j = 0; j < 550; j++) {
                     for (int k = 0; k < 2; k++) {
-                        floatValues[k  + j * 2 + i * 1100] = dataraw[i][j][k];
+                        floatValues[k + j * 2 + i * 1100] = dataraw[i][j][k];
 
                     }
                 }
@@ -92,7 +104,7 @@ public class TensorFlowUtil {
         for (int i = 0; i < 13; i++) {
             outputs[i] = -1;
         }
-        //S1. 把图片的像素数据喂给TensorFlow
+        //S1. 把数据喂给TensorFlow
         Trace.beginSection("feed");
         inferenceInterface.feed(inputName, floatValues, batch, h, w, c);
         Trace.endSection();
@@ -109,10 +121,7 @@ public class TensorFlowUtil {
         inferenceInterface.fetch(outputNameint, outputint);
         Trace.endSection();
         String log = "\n" + target + ":\n";
-//        for (int i = 0; i < 13; i++) {
-//            log = log + i + ":" + outputs[i]+"\n";
-//
-//        }
+
         Log.i("TensorflowesturePredict", "result:" + outputint[0]);
 
     }
