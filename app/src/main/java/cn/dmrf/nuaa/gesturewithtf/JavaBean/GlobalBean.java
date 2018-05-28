@@ -52,6 +52,7 @@ public class GlobalBean {
     public int recBufSize = 4400;            //定义录音片长度
     public int numfre = 8;
     public char[] CODE = {'A', 'B', 'C', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'};
+    public String[] gesture_name={"Static","Push Left","Push Right","Click","Flip","Circle"};
     public float[] scores = new float[13];
     public int[] len_i = new int[2];
 
@@ -92,6 +93,11 @@ public class GlobalBean {
 
     private String[] codesstr = {"ncnntest", "static", "push left", "push right", "click", "flip", "grab", "release"};
 
+    private int lstm_predict_count = 0;
+
+    private float dataraw[][][] = new float[8][2200][2];
+    private float[][] gesturedata = new float[4][8800];
+
 
     @SuppressLint("HandlerLeak")
     public Handler mHandler = new Handler() {
@@ -101,14 +107,12 @@ public class GlobalBean {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case 0:
-                    if (msg.obj.toString().equals("wait")) {
+                    if (msg.obj.toString().equals("predict")) {
                         flag_small.setVisibility(View.GONE);
                         long time = System.currentTimeMillis();
                         final String day = String.valueOf(time);
 
-
-                        PredictGesture(0, tvDist, day + "_0");
-                        PredictGesture(550, tvDist2, day + "_1");
+                        PredictContinousGesture();
 
 
                         for (int i = 0; i < 8; i++) {
@@ -146,30 +150,13 @@ public class GlobalBean {
     };
 
 
-    private void PredictGesture(int a, TextView textView, String name) {//第一个a为0，第二个a为550
+    private void PredictContinousGesture() {//第一个a为0，第二个a为550
 
         float id[] = new float[4400];
         float qd[] = new float[4400];
-        len_i[0] = 4400;
-
-//        float fi[][]=new float[8][550];
-//        float fq[][]=new float[8][550];
-//
-//        int b = a + 550;
-//        for (int i=0;i<8;i++){
-//            for (int j=a;j<b;j++){
-//                fi[i][j%550] = L_I[i].get(j).floatValue();
-//                fq[i][j%550] = L_Q[i].get(j).floatValue();
-//            }
-//            signalProcess.Normalize(fi[i],fq[i]);
-//        }
-
-
-
         int ks = 0;
-        int b = a + 550;
         for (int i = 0; i < 8; i++) {
-            for (int j = a; j < b; j++) {
+            for (int j = 0; j < 550; j++) {
                 id[ks] = L_I[i].get(j).floatValue();
                 qd[ks] = L_Q[i].get(j).floatValue();
                 ks++;
@@ -185,36 +172,33 @@ public class GlobalBean {
                 for (int k = 0; k < 2; k++) {
                     if (k == 0) {
                         dataraw[i][j][k] = id[i * 550 + j];
-                        //dataraw[i][j][k] =fi[i][j];
                     } else {
                         dataraw[i][j][k] = qd[i * 550 + j];
-                        //dataraw[i][j][k] =fq[i][j];
                     }
 
                 }
             }
         }
-        float[] floatValues = new float[8800];
 
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 550; j++) {
                 for (int k = 0; k < 2; k++) {
-                    floatValues[k + j * 2 + i * 1100] = dataraw[i][j][k];
+                    gesturedata[lstm_predict_count][k + j * 2 + i * 1100] = dataraw[i][j][k];
 
                 }
             }
         }
-        long inde = tensorFlowUtil.Predict(floatValues);
-        if (a == 0) {
-            tvDist.setText(CODE[(int) inde] + "");
-        } else {
-            tvDist2.setText(CODE[(int) inde] + "");
-        }
 
 
-//        if (senddataflag) {
-//            SaveData(name, max_index, data_i, data_q);
-//        }
+        long inde = tensorFlowUtil.PredictContinous(gesturedata, lstm_predict_count);
+        tvDist.setText(gesture_name[(int) inde]);
+        lstm_predict_count++;
+        lstm_predict_count=lstm_predict_count%4;
+
+
+/*        if (senddataflag) {
+            SaveData(name, max_index, data_i, data_q);
+        }*/
 
 
     }
@@ -337,11 +321,19 @@ public class GlobalBean {
             }
             list[count].add(data[i]);
         }
-
     }
 
 
     private void Start() {
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 550; j++) {
+                for (int k = 0; k < 2; k++) {
+                    dataraw[i][j][k] = 0;
+                }
+            }
+        }
+        lstm_predict_count = 0;
+
         if (L_I[0] != null) {
             for (int i = 0; i < 8; i++) {
                 L_I[i].clear();

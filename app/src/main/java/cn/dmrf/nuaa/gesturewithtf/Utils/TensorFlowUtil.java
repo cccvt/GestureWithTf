@@ -17,15 +17,20 @@ public class TensorFlowUtil {
 
     private TensorFlowInferenceInterface inferenceInterface;
 
-    private String inputName = "input";
-    private String outputName = "softmax";
-    private String outputNameint = "output";
+    private String input_cnn = "input";
+    private String fullconnection1 = "fullconnection1";
+    private String input_lstm = "input_lstm";
+    private String output_lstm = "output_lstm";
+
+
     private String[] outputNames;
+    private String[] outputNames2;
     private float[] floatValues;
     private float[] outputs;
     private long[] outputint;
-    private int classes = 13;
-    private int w = 550;
+    private float[] outputfuuconnection;
+    private int classes = 6;
+    private int w = 2200;
     private int h = 8;
     private int c = 2;
     private int batch = 1;
@@ -37,11 +42,16 @@ public class TensorFlowUtil {
         try {
             this.assetManager = assetManager;
             inferenceInterface = new TensorFlowInferenceInterface(assetManager, model);
-            outputNames = new String[]{outputName, outputNameint};
+            outputNames = new String[]{fullconnection1};
+            outputNames2 = new String[]{output_lstm};
             floatValues = new float[w * h * c];
 
             outputs = new float[classes];
+            outputfuuconnection = new float[256];
+
             outputint = new long[1];
+
+            PredictContinousTest();
 
 
         } catch (Exception e) {
@@ -50,20 +60,51 @@ public class TensorFlowUtil {
     }
 
     @SuppressLint("LongLogTag")
-    public long Predict(float[] gesturedata) {
+    public long PredictContinousTest() {
+        float test[] = new float[8800];
 
         outputint[0] = -1;
-        inferenceInterface.feed(inputName, gesturedata, batch, h, w, c);
+        inferenceInterface.feed(input_cnn, test, batch, 8, 550, 2);
 
         inferenceInterface.run(outputNames, logStats);
 
         Trace.beginSection("fetch");
-        inferenceInterface.fetch(outputNameint, outputint);
-gesturedata
+        inferenceInterface.fetch(fullconnection1, outputfuuconnection);
         Log.i("TensorflowesturePredict", "result:" + outputint[0]);
         return outputint[0];
     }
 
+
+    @SuppressLint("LongLogTag")
+    public long PredictContinous(float[][] gesturedata, int count) {
+
+        float input_ls[] = new float[1024];
+        for (int i = 0; i < 1024; i++) {
+            input_ls[i] = 0;
+        }
+        float mic_gesture[] = new float[8800];
+        for (int i = 0; i < count; i++) {
+
+            for (int j = 0; j < 8800; j++) {
+                mic_gesture[j] = gesturedata[i][j];
+            }
+
+            inferenceInterface.feed(input_cnn, mic_gesture, 1, 8, 550, 2);
+            inferenceInterface.run(outputNames, logStats);
+            inferenceInterface.fetch(fullconnection1, outputfuuconnection);
+
+            for (int k = i * 256; k < (i + 1) * 256; k++) {
+                input_ls[k] = outputfuuconnection[k%256];
+            }
+        }
+
+        inferenceInterface.feed(input_lstm, input_ls, 1, 1024, 1, 1);
+        inferenceInterface.run(outputNames2, logStats);
+        inferenceInterface.fetch(output_lstm, outputint);
+
+        Log.i("TensorflowesturePredict", "result:" + outputint[0]);
+        return outputint[0];
+    }
 
     @SuppressLint("LongLogTag")
     public void PredictTest() {
@@ -105,7 +146,7 @@ gesturedata
         }
         // 把数据喂给TensorFlow
         Trace.beginSection("feed");
-        inferenceInterface.feed(inputName, floatValues, batch, h, w, c);
+        //  inferenceInterface.feed(inputName, floatValues, batch, h, w, c);
         Trace.endSection();
 
         // Run the inference call.
@@ -117,7 +158,7 @@ gesturedata
         // Copy the output Tensor back into the output array.
         // 捕捉输出
         Trace.beginSection("fetch");
-        inferenceInterface.fetch(outputNameint, outputint);
+        //inferenceInterface.fetch(outputNameint, outputint);
         Trace.endSection();
         String log = "\n" + target + ":\n";
 

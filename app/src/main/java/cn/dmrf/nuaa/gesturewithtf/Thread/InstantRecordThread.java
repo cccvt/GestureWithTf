@@ -28,10 +28,10 @@ public class InstantRecordThread extends Thread {
         double totPhase = 0;
         double NowPhase = 0;
         //--------------jni------------------------
-        globalBean.signalProcess=new SignalProcess();
+        globalBean.signalProcess = new SignalProcess();
         globalBean.signalProcess.DemoNew();
 
-        while (globalBean.flag == false) {
+        while (!globalBean.flag) {
         }
         try {
             globalBean.audioRecord.startRecording();
@@ -48,9 +48,6 @@ public class InstantRecordThread extends Thread {
         while (globalBean.flag)//大循环
         {
 
-
-            //读取录音
-            // short[] bsRecord = new short[recBufSize];//recBufSize=4400*2
 
             int Len = globalBean.audioRecord.read(bsRecord, 0, globalBean.recBufSize);
 
@@ -80,37 +77,25 @@ public class InstantRecordThread extends Thread {
                 globalBean.mHandler.sendMessage(msg3);
                 while_count = 0;
                 begin_while++;
-            } else if (while_count == 10 && begin_while > 0)
-            {
+            } else if (while_count == 5 && begin_while > 0) {
 
-            //    SaveData();
+                //    SaveData();
                 while_count = 0;
                 begin_while++;
                 Message msg2 = new Message();
                 msg2.what = 0;
 
-                msg2.obj = ("wait");
+                msg2.obj = ("predict");
                 globalBean.mHandler.sendMessage(msg2);
 
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                Message msg3 = new Message();
-                msg3.what = 0;
 
-                msg3.obj = ("start");
-                globalBean.mHandler.sendMessage(msg3);
             }
-           if (globalBean.flag1==true) {
+            if (globalBean.flag1) {
 
                 Message msg2 = new Message();
                 msg2.what = 0;
-
                 msg2.obj = "stop";
                 globalBean.mHandler.sendMessage(msg2);
-
                 break;
             }
 
@@ -118,7 +103,6 @@ public class InstantRecordThread extends Thread {
             double[] tempIIR = new double[880];
             double[] tempQQR = new double[880];
             globalBean.signalProcess.DemoR(bsRecord, di, tempIIR, tempQQR);
-
 
 
             NowPhase += totPhase / 2;
