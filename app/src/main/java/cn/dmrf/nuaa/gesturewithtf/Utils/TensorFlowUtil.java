@@ -59,7 +59,7 @@ public class TensorFlowUtil {
 
         Trace.beginSection("fetch");
         inferenceInterface.fetch(outputNameint, outputint);
-
+gesturedata
         Log.i("TensorflowesturePredict", "result:" + outputint[0]);
         return outputint[0];
     }
