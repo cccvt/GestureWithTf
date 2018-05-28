@@ -53,7 +53,7 @@ public class TensorFlowUtil {
     public long Predict(float[] gesturedata) {
 
         outputint[0] = -1;
-        inferenceInterface.feed(inputName, floatValues, batch, h, w, c);
+        inferenceInterface.feed(inputName, gesturedata, batch, h, w, c);
 
         inferenceInterface.run(outputNames, logStats);
 
@@ -91,7 +91,6 @@ public class TensorFlowUtil {
                 for (int j = 0; j < 550; j++) {
                     for (int k = 0; k < 2; k++) {
                         floatValues[k + j * 2 + i * 1100] = dataraw[i][j][k];
-
                     }
                 }
             }
@@ -104,19 +103,19 @@ public class TensorFlowUtil {
         for (int i = 0; i < 13; i++) {
             outputs[i] = -1;
         }
-        //S1. 把数据喂给TensorFlow
+        // 把数据喂给TensorFlow
         Trace.beginSection("feed");
         inferenceInterface.feed(inputName, floatValues, batch, h, w, c);
         Trace.endSection();
 
         // Run the inference call.
         Trace.beginSection("run");
-        //S2. 运行TensorFlow
+        //运行TensorFlow
         inferenceInterface.run(outputNames, logStats);
         Trace.endSection();
 
         // Copy the output Tensor back into the output array.
-        //S3. 捕捉输出
+        // 捕捉输出
         Trace.beginSection("fetch");
         inferenceInterface.fetch(outputNameint, outputint);
         Trace.endSection();

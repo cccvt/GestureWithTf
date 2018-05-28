@@ -90,6 +90,8 @@ public class GlobalBean {
 
     public SignalProcess signalProcess;
 
+    private String[] codesstr = {"ncnntest", "static", "push left", "push right", "click", "flip", "grab", "release"};
+
 
     @SuppressLint("HandlerLeak")
     public Handler mHandler = new Handler() {
@@ -150,6 +152,19 @@ public class GlobalBean {
         float qd[] = new float[4400];
         len_i[0] = 4400;
 
+//        float fi[][]=new float[8][550];
+//        float fq[][]=new float[8][550];
+//
+//        int b = a + 550;
+//        for (int i=0;i<8;i++){
+//            for (int j=a;j<b;j++){
+//                fi[i][j%550] = L_I[i].get(j).floatValue();
+//                fq[i][j%550] = L_Q[i].get(j).floatValue();
+//            }
+//            signalProcess.Normalize(fi[i],fq[i]);
+//        }
+
+
 
         int ks = 0;
         int b = a + 550;
@@ -161,6 +176,8 @@ public class GlobalBean {
             }
         }
 
+        signalProcess.Normalize(id, qd);
+
 
         float dataraw[][][] = new float[8][550][2];
         for (int i = 0; i < 8; i++) {
@@ -168,8 +185,10 @@ public class GlobalBean {
                 for (int k = 0; k < 2; k++) {
                     if (k == 0) {
                         dataraw[i][j][k] = id[i * 550 + j];
+                        //dataraw[i][j][k] =fi[i][j];
                     } else {
                         dataraw[i][j][k] = qd[i * 550 + j];
+                        //dataraw[i][j][k] =fq[i][j];
                     }
 
                 }
@@ -186,7 +205,12 @@ public class GlobalBean {
             }
         }
         long inde = tensorFlowUtil.Predict(floatValues);
-        textView.setText(CODE[(int) inde]);
+        if (a == 0) {
+            tvDist.setText(CODE[(int) inde] + "");
+        } else {
+            tvDist2.setText(CODE[(int) inde] + "");
+        }
+
 
 //        if (senddataflag) {
 //            SaveData(name, max_index, data_i, data_q);

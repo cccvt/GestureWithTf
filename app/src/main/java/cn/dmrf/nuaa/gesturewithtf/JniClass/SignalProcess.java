@@ -8,6 +8,8 @@ public class SignalProcess {
     public native int DemoR(short[] Record, double[] DIST, double[] tempII, double[] tempQQ);
 
 
+    public native  void Normalize(float[] i,float[] q);
+
     static {
         System.loadLibrary("signalprocess");
     }
