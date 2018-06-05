@@ -18,6 +18,9 @@ public class TensorFlowUtil {
     private TensorFlowInferenceInterface inferenceInterface;
 
     private String input_cnn = "input";
+    private String output_cnn = "output";
+
+
     private String fullconnection1 = "fullconnection1";
     private String input_lstm = "input_lstm";
     private String output_lstm = "output_lstm";
@@ -29,20 +32,20 @@ public class TensorFlowUtil {
     private float[] outputs;
     private long[] outputint;
     private float[] outputfuuconnection;
-    private int classes = 6;
-    private int w = 2200;
+    private int classes = 3;
+    private int w = 550;
     private int h = 8;
     private int c = 2;
     private int batch = 1;
     private boolean logStats = true;
     private AssetManager assetManager;
-    private String target = "H";
+    private String target = "C";
 
     public TensorFlowUtil(AssetManager assetManager, String model) {
         try {
             this.assetManager = assetManager;
             inferenceInterface = new TensorFlowInferenceInterface(assetManager, model);
-            outputNames = new String[]{fullconnection1};
+            outputNames = new String[]{output_cnn};
             outputNames2 = new String[]{output_lstm};
             floatValues = new float[w * h * c];
 
@@ -141,12 +144,12 @@ public class TensorFlowUtil {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        for (int i = 0; i < 13; i++) {
+        for (int i = 0; i < 3; i++) {
             outputs[i] = -1;
         }
         // 把数据喂给TensorFlow
         Trace.beginSection("feed");
-        //  inferenceInterface.feed(inputName, floatValues, batch, h, w, c);
+         inferenceInterface.feed(input_cnn, floatValues, batch, h, w, c);
         Trace.endSection();
 
         // Run the inference call.
@@ -158,12 +161,31 @@ public class TensorFlowUtil {
         // Copy the output Tensor back into the output array.
         // 捕捉输出
         Trace.beginSection("fetch");
-        //inferenceInterface.fetch(outputNameint, outputint);
+        inferenceInterface.fetch(output_cnn, outputint);
         Trace.endSection();
         String log = "\n" + target + ":\n";
 
         Log.i("TensorflowesturePredict", "result:" + outputint[0]);
 
+    }
+
+
+    public int PredictCnnAbc(float gesturedata[]){
+        // 把数据喂给TensorFlow
+        inferenceInterface.feed(input_cnn, gesturedata, batch, h, w, c);
+
+        // Run the inference call.
+        //运行TensorFlow
+        inferenceInterface.run(outputNames, logStats);
+
+        // Copy the output Tensor back into the output array.
+        // 捕捉输出
+        inferenceInterface.fetch(output_cnn, outputint);
+        String log = "\n" + target + ":\n";
+
+        Log.i("TensorflowesturePredict", "result:" + outputint[0]);
+
+        return (int) outputint[0];
     }
 
     /**

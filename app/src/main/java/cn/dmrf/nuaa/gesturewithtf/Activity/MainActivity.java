@@ -7,6 +7,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.example.dmrf.gesturewithncnn.R;
 
 import java.io.IOException;
@@ -30,7 +31,9 @@ public class MainActivity extends AppCompatActivity {
 
         Bmob.initialize(this, "9dbc988651cd8b0403a4d8e2566459e9");
         globalBean = new GlobalBean(MainActivity.this);
-        globalBean.tensorFlowUtil=new TensorFlowUtil(getAssets(),"gesture_cnn_lstm6.pb");
+        globalBean.tensorFlowUtil=new TensorFlowUtil(getAssets(),"abc_gesture_cnn.pb");
+      //  globalBean.tensorFlowUtil.PredictTest();
+
         try {
             Init();
         } catch (IOException e) {
@@ -43,16 +46,12 @@ public class MainActivity extends AppCompatActivity {
     private void Init() throws IOException {
         globalBean.btnPlayRecord = (Button) findViewById(R.id.btnplayrecord);
         globalBean.btnStopRecord = (Button) findViewById(R.id.btnstoprecord);
-        globalBean.btnSet=findViewById(R.id.btnset);
         globalBean.tvDist = (TextView) findViewById(R.id.textView1);
         globalBean.tvDist2 = (TextView) findViewById(R.id.textView2);
         globalBean.flag_small = (ImageView) findViewById(R.id.flag_small);
-        globalBean.CkBox_send=findViewById(R.id.checkBox_send);
         globalBean.no_network_worning=(TextView)findViewById(R.id.no_network_worning);
+        globalBean.gesturePicture=findViewById(R.id.gesturePicture);
+
         globalBean.Init();
-
-
-
-
     }
 }

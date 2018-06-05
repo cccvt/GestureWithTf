@@ -82,11 +82,16 @@ public class InstantRecordThread extends Thread {
                 //    SaveData();
                 while_count = 0;
                 begin_while++;
-                Message msg2 = new Message();
-                msg2.what = 0;
 
-                msg2.obj = ("predict");
+                Message msg2 = new Message();
+                msg2.what = 3;
+                msg2.obj = ("abc");
                 globalBean.mHandler.sendMessage(msg2);
+//                Message msg2 = new Message();
+//                msg2.what = 0;
+//
+//                msg2.obj = ("predict");
+//                globalBean.mHandler.sendMessage(msg2);
 
 
             }

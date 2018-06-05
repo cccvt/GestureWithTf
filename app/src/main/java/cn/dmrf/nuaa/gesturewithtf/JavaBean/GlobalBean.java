@@ -10,6 +10,8 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Trace;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
@@ -19,11 +21,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.bumptech.glide.Glide;
+import com.example.dmrf.gesturewithncnn.R;
+
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import cn.dmrf.nuaa.gesturewithtf.Activity.MainActivity;
 import cn.dmrf.nuaa.gesturewithtf.JniClass.SignalProcess;
 import cn.dmrf.nuaa.gesturewithtf.Utils.TensorFlowUtil;
 import cn.dmrf.nuaa.gesturewithtf.Thread.InstantPlayThread;
@@ -52,7 +58,7 @@ public class GlobalBean {
     public int recBufSize = 4400;            //定义录音片长度
     public int numfre = 8;
     public char[] CODE = {'A', 'B', 'C', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'};
-    public String[] gesture_name={"Static","Push Left","Push Right","Click","Flip","Circle"};
+    public String[] gesture_name = {"Static", "Push Left", "Push Right", "Click", "Flip", "Circle"};
     public float[] scores = new float[13];
     public int[] len_i = new int[2];
 
@@ -64,12 +70,12 @@ public class GlobalBean {
      */
     public Button btnPlayRecord;        //开始按钮
     public Button btnStopRecord;        //结束按钮
-    public Button btnSet;        //结束按钮
+    //    public Button btnSet;        //结束按钮
     public TextView tvDist;
     public TextView tvDist2;
     public TextView no_network_worning;
     public ImageView flag_small;
-    public CheckBox CkBox_send;
+//    public CheckBox CkBox_send;
 
     public int is_in_count = -1;
     public int gesture_length = 1100;
@@ -86,6 +92,7 @@ public class GlobalBean {
 
 
     public String whoandwhich = "W";
+    private int flagnum = 0;
 
     private Context context;
 
@@ -97,6 +104,11 @@ public class GlobalBean {
 
     private float dataraw[][][] = new float[8][2200][2];
     private float[][] gesturedata = new float[4][8800];
+
+
+    private int gif_id[] = {R.drawable.staticgesture, R.drawable.push_left, R.drawable.push_right,
+            R.drawable.click, R.drawable.grab, R.drawable.release};
+    private int git_num = 0;
 
 
     @SuppressLint("HandlerLeak")
@@ -145,9 +157,88 @@ public class GlobalBean {
                 case 2:
                     tvDist2.setText(msg.obj.toString());
                     break;
+                case 3:
+                    if (msg.obj.toString().equals("abc")) {
+                        PredictAbcGesture();
+                        for (int i = 0; i < 8; i++) {
+                            L_I[i].clear();
+                            L_Q[i].clear();
+                        }
+                    }
+
+                    break;
             }
         }
     };
+    public ImageView gesturePicture;
+
+
+    private void PredictAbcGesture() {
+
+        float id[] = new float[4400];
+        float qd[] = new float[4400];
+        float floatValues[] = new float[8800];
+
+
+        int ks = 0;
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 550; j++) {
+                id[ks] = L_I[i].get(j).floatValue();
+                qd[ks] = L_Q[i].get(j).floatValue();
+                ks++;
+            }
+        }
+
+        signalProcess.Normalize(id, qd);
+
+        float dataraw[][][] = new float[8][550][2];
+
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 550; j++) {
+                for (int k = 0; k < 2; k++) {
+                    if (k == 0) {
+                        dataraw[i][j][k] = id[i * 550 + j];
+                    } else {
+                        dataraw[i][j][k] = qd[i * 550 + j];
+                    }
+
+                }
+            }
+        }
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 550; j++) {
+                for (int k = 0; k < 2; k++) {
+                    floatValues[k + j * 2 + i * 1100] = dataraw[i][j][k];
+                }
+            }
+        }
+
+
+        int label = tensorFlowUtil.PredictCnnAbc(floatValues);
+
+
+        Log.i("TensorflowesturePredict", "end result:" + label);
+
+
+        if (label == 1) {
+            tvDist.setText("靠近" + "-" + flagnum);
+        } else if (label == 0) {
+            tvDist.setText("静止" + "-" + flagnum);
+        } else {
+            // tvDist.setText("静止"+"-"+flagnum);
+        }
+
+
+        flagnum++;
+
+//        if (flagnum==30){
+//            flagnum=0;
+//            StopVoi();
+//            PlayVoi();
+//
+//        }
+
+    }
 
 
     private void PredictContinousGesture() {//第一个a为0，第二个a为550
@@ -193,7 +284,7 @@ public class GlobalBean {
         long inde = tensorFlowUtil.PredictContinous(gesturedata, lstm_predict_count);
         tvDist.setText(gesture_name[(int) inde]);
         lstm_predict_count++;
-        lstm_predict_count=lstm_predict_count%4;
+        lstm_predict_count = lstm_predict_count % 4;
 
 
 /*        if (senddataflag) {
@@ -250,36 +341,8 @@ public class GlobalBean {
             @Override
             public void onClick(View v) {
 
-                senddataflag = CkBox_send.isChecked();
-
-                if (senddataflag) {
-
-                    if (NetWorkUtils.getAPNType(context) == 0) {
-                        no_network_worning.setVisibility(View.VISIBLE);
-                        return;
-                    }
-                }
-
-
-                if (whoandwhich.equals("")) {
-                    Toast.makeText(context, "不告诉我你是谁不让你录！", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                Start();
-
-                new InstantPlayThread(GlobalBean.this).start();        //播放(发射超声波)
-
-
-                try {
-                    Thread.sleep(10);    //等待开始播放再录音
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-
-                new InstantRecordThread(GlobalBean.this, context).start();        //录音
-                //录音播放线程
+                Glide.with(context).load(gif_id[git_num]).into(gesturePicture);
+                git_num++;
 
             }
         });
@@ -291,21 +354,37 @@ public class GlobalBean {
             @SuppressLint("ResourceAsColor")
             @Override
             public void onClick(View v) {
-                Stop();
+
                 // TODO 自动生成的方法存根
-
-            }
-        });
-
-        btnSet.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ShowChoiseWhich();
+                StopVoi();
             }
         });
 
     }
 
+
+    private void PlayVoi() {
+
+
+        Start();
+
+        new InstantPlayThread(GlobalBean.this).start();        //播放(发射超声波)
+
+
+        try {
+            Thread.sleep(10);    //等待开始播放再录音
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+        new InstantRecordThread(GlobalBean.this, context).start();        //录音
+        //录音播放线程
+    }
+
+    private void StopVoi() {
+        Stop();
+    }
 
     @SuppressLint("ResourceAsColor")
     public void Stop() {
